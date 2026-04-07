@@ -1,2 +1,3 @@
 # AcadFitCeub
-Repositorio onde vamos colocar nossas piras
+
+Projeto Integrador 3 - site/aplicação para registro de treinos e dieta
