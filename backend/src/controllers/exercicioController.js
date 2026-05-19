@@ -21,4 +21,21 @@ const listarExercicios = async (req, res) => {
   return res.status(200).json(data);
 };
 
-module.exports = { listarExercicios };
+// GET /exercicios/:id — detalhes de um exercício
+const buscarExercicioPorId = async (req, res) => {
+  const { id } = req.params;
+
+  const { data, error } = await supabase
+    .from("exercicio")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ erro: "Exercício não encontrado." });
+  }
+
+  return res.status(200).json(data);
+};
+
+module.exports = { listarExercicios, buscarExercicioPorId };
