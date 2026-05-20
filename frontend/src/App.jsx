@@ -1,11 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import MeusTreinos from "./pages/MeusTreinos";
-import Catalogo from "./pages/Catalogo";
-import DiarioDieta from "./pages/DiarioDieta";
-import CriarFicha from "./pages/CriarFicha";
-import EditarFicha from "./pages/EditarFicha";
 import RotaProtegida from "./components/RotaProtegida";
 
 function App() {
@@ -18,46 +13,6 @@ function App() {
           element={
             <RotaProtegida>
               <Dashboard />
-            </RotaProtegida>
-          }
-        />
-        <Route
-          path="/meus-treinos"
-          element={
-            <RotaProtegida>
-              <MeusTreinos />
-            </RotaProtegida>
-          }
-        />
-        <Route
-          path="/catalogo"
-          element={
-            <RotaProtegida>
-              <Catalogo />
-            </RotaProtegida>
-          }
-        />
-        <Route
-          path="/dieta"
-          element={
-            <RotaProtegida>
-              <DiarioDieta />
-            </RotaProtegida>
-          }
-        />
-        <Route
-          path="/criar-ficha"
-          element={
-            <RotaProtegida>
-              <CriarFicha />
-            </RotaProtegida>
-          }
-        />
-        <Route
-          path="/editar-ficha/:id"
-          element={
-            <RotaProtegida>
-              <EditarFicha />
             </RotaProtegida>
           }
         />
