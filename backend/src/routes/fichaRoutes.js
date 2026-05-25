@@ -9,10 +9,14 @@ const {
   deletarFicha,
   adicionarExercicio,
   removerExercicio,
+  treino_do_dia,
 } = require("../controllers/fichaController");
 
 // POST /fichas — cria nova ficha de treino
 router.post("/", authMiddleware, criarFicha);
+
+// GET /fichas/treino-do-dia — retorna a ficha do dia atual
+router.get("/treino-do-dia", authMiddleware, treino_do_dia);
 
 // GET /fichas — lista todas as fichas do usuário
 router.get("/", authMiddleware, listarFichas);

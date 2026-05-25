@@ -134,12 +134,10 @@ const adicionarExercicio = async (req, res) => {
       .json({ erro: "Erro ao adicionar exercício.", detalhe: error.message });
   }
 
-  return res
-    .status(201)
-    .json({
-      mensagem: "Exercício adicionado com sucesso!",
-      ficha_exercicio: data,
-    });
+  return res.status(201).json({
+    mensagem: "Exercício adicionado com sucesso!",
+    ficha_exercicio: data,
+  });
 };
 
 // DELETE /fichas/:id/exercicios/:exercicio_id — remove exercício de uma ficha
@@ -161,6 +159,37 @@ const removerExercicio = async (req, res) => {
   return res.status(200).json({ mensagem: "Exercício removido com sucesso!" });
 };
 
+// GET /fichas/treino-do-dia — retorna a ficha do dia atual da semana
+const treino_do_dia = async (req, res) => {
+  const usuario_id = req.usuario.id;
+
+  const diasSemana = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ];
+  const hoje = diasSemana[new Date().getDay()];
+
+  const { data, error } = await supabase
+    .from("ficha_treino")
+    .select("*, ficha_exercicio(*, exercicio(*))")
+    .eq("usuario_id", usuario_id)
+    .eq("dia_semana", hoje)
+    .single();
+
+  if (error || !data) {
+    return res
+      .status(404)
+      .json({ erro: `Nenhuma ficha encontrada para ${hoje}.` });
+  }
+
+  return res.status(200).json(data);
+};
+
 module.exports = {
   criarFicha,
   listarFichas,
@@ -169,4 +198,5 @@ module.exports = {
   deletarFicha,
   adicionarExercicio,
   removerExercicio,
+  treino_do_dia,
 };
