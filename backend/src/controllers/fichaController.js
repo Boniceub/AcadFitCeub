@@ -64,10 +64,10 @@ const buscarFichaPorId = async (req, res) => {
   return res.status(200).json(data);
 };
 
-// PUT /fichas/:id — edita nome da ficha
+// PUT /fichas/:id — edita nome e dia da semana da ficha
 const editarFicha = async (req, res) => {
   const { id } = req.params;
-  const { nome } = req.body;
+  const { nome, dia_semana } = req.body;
   const usuario_id = req.usuario.id;
 
   if (!nome) {
@@ -76,7 +76,7 @@ const editarFicha = async (req, res) => {
 
   const { data, error } = await supabase
     .from("ficha_treino")
-    .update({ nome })
+    .update({ nome, dia_semana })
     .eq("id", id)
     .eq("usuario_id", usuario_id)
     .select()
