@@ -111,10 +111,62 @@ const deletarFicha = async (req, res) => {
   return res.status(200).json({ mensagem: "Ficha deletada com sucesso!" });
 };
 
+// POST /fichas/:id/exercicios — adiciona exercício a uma ficha
+const adicionarExercicio = async (req, res) => {
+  const { id } = req.params;
+  const { exercicio_id, series, repeticoes, carga_kg } = req.body;
+
+  if (!exercicio_id || !series || !repeticoes) {
+    return res
+      .status(400)
+      .json({ erro: "exercicio_id, series e repeticoes são obrigatórios." });
+  }
+
+  const { data, error } = await supabase
+    .from("ficha_exercicio")
+    .insert([{ ficha_id: id, exercicio_id, series, repeticoes, carga_kg }])
+    .select()
+    .single();
+
+  if (error) {
+    return res
+      .status(500)
+      .json({ erro: "Erro ao adicionar exercício.", detalhe: error.message });
+  }
+
+  return res
+    .status(201)
+    .json({
+      mensagem: "Exercício adicionado com sucesso!",
+      ficha_exercicio: data,
+    });
+};
+
+// DELETE /fichas/:id/exercicios/:exercicio_id — remove exercício de uma ficha
+const removerExercicio = async (req, res) => {
+  const { id, exercicio_id } = req.params;
+
+  const { error } = await supabase
+    .from("ficha_exercicio")
+    .delete()
+    .eq("ficha_id", id)
+    .eq("id", exercicio_id);
+
+  if (error) {
+    return res
+      .status(500)
+      .json({ erro: "Erro ao remover exercício.", detalhe: error.message });
+  }
+
+  return res.status(200).json({ mensagem: "Exercício removido com sucesso!" });
+};
+
 module.exports = {
   criarFicha,
   listarFichas,
   buscarFichaPorId,
   editarFicha,
   deletarFicha,
+  adicionarExercicio,
+  removerExercicio,
 };

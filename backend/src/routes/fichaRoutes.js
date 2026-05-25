@@ -7,6 +7,8 @@ const {
   buscarFichaPorId,
   editarFicha,
   deletarFicha,
+  adicionarExercicio,
+  removerExercicio,
 } = require("../controllers/fichaController");
 
 // POST /fichas — cria nova ficha de treino
@@ -23,5 +25,15 @@ router.put("/:id", authMiddleware, editarFicha);
 
 // DELETE /fichas/:id — deleta uma ficha
 router.delete("/:id", authMiddleware, deletarFicha);
+
+// POST /fichas/:id/exercicios — adiciona exercício a uma ficha
+router.post("/:id/exercicios", authMiddleware, adicionarExercicio);
+
+// DELETE /fichas/:id/exercicios/:exercicio_id — remove exercício de uma ficha
+router.delete(
+  "/:id/exercicios/:exercicio_id",
+  authMiddleware,
+  removerExercicio,
+);
 
 module.exports = router;
