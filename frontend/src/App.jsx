@@ -9,6 +9,7 @@ import AdminExercicios from "./pages/AdminExercicios";
 import CriarFicha from "./pages/CriarFicha";
 import EditarFicha from "./pages/EditarFicha";
 import Catalogo from "./pages/Catalogo";
+import DiarioDieta from "./pages/DiarioDieta";
 
 function App() {
   return (
@@ -48,6 +49,15 @@ function App() {
           element={
             <RotaProtegida>
               <Catalogo />
+            </RotaProtegida>
+          }
+        />
+
+        <Route
+          path="/dieta"
+          element={
+            <RotaProtegida>
+              <DiarioDieta />
             </RotaProtegida>
           }
         />
