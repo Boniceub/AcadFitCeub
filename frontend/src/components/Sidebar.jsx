@@ -14,10 +14,10 @@ const menuItem = (active) => ({
 });
 
 const navItems = [
-  { label: "Dashboard", path: "/dashboard", icon: "D" },
-  { label: "Meus Treinos", path: "/meus-treinos", icon: "T" },
-  { label: "Catálogo", path: "/catalogo", icon: "C" },
-  { label: "Diário de Dieta", path: "/dieta", icon: "N" },
+  { label: "Dashboard", path: "/dashboard", icon: "★" },
+  { label: "Meus Treinos", path: "/meus-treinos", icon: "★" },
+  { label: "Catálogo", path: "/catalogo", icon: "★" },
+  { label: "Diário de Dieta", path: "/dieta", icon: "★" },
 ];
 
 export default function Sidebar() {
@@ -133,11 +133,11 @@ export default function Sidebar() {
           Conta
         </p>
         <div style={menuItem(false)}>
-          <span style={{ width: 22 }}>P</span>
+          <span style={{ width: 22 }}>★</span>
           <span>Perfil</span>
         </div>
         <div style={menuItem(false)}>
-          <span style={{ width: 22 }}>A</span>
+          <span style={{ width: 22 }}>★</span>
           <span>Configurações</span>
         </div>
       </nav>
