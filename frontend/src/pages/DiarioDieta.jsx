@@ -1064,7 +1064,11 @@ const campoBusca = {
   padding: "11px 13px",
   border: "1px solid #d6dde4",
   borderRadius: 8,
+  background: "#ffffff",
   color: "#102b46",
+  caretColor: "#102b46",
+  colorScheme: "light",
+  outline: "none",
 };
 
 const catalogoLista = {
@@ -1140,5 +1144,9 @@ const campoQuantidade = {
   padding: "9px 10px",
   border: "1px solid #d6dde4",
   borderRadius: 8,
+  background: "#ffffff",
   color: "#102b46",
+  caretColor: "#102b46",
+  colorScheme: "light",
+  outline: "none",
 };
