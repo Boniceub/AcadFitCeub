@@ -11,31 +11,27 @@ const valoresPositivos = ({
 
   return valores.every((valor) => {
     if (valor === undefined || valor === null || valor === "") return true;
-    return Number(valor) >= 0;
+    return Number.isFinite(Number(valor)) && Number(valor) >= 0;
   });
 };
 
 // GET /alimentos
 const listarAlimentos = async (req, res) => {
-  const usuario_id = req.usuario.id;
   const { busca } = req.query;
 
-  let query = supabase
-    .from("alimento")
-    .select("*")
-    .eq("usuario_id", usuario_id)
-    .order("nome");
+  let query = supabase.from("alimento").select("*").order("nome");
 
-  if (busca) {
-    query = query.ilike("nome", `%${busca}%`);
+  if (busca?.trim()) {
+    query = query.ilike("nome", `%${busca.trim()}%`);
   }
 
   const { data, error } = await query;
 
   if (error) {
-    return res
-      .status(500)
-      .json({ erro: "Erro ao buscar alimentos.", detalhe: error.message });
+    return res.status(500).json({
+      erro: "Erro ao buscar alimentos.",
+      detalhe: error.message,
+    });
   }
 
   return res.status(200).json(data);
@@ -43,17 +39,22 @@ const listarAlimentos = async (req, res) => {
 
 // GET /alimentos/:id
 const buscarAlimentoPorId = async (req, res) => {
-  const usuario_id = req.usuario.id;
   const { id } = req.params;
 
   const { data, error } = await supabase
     .from("alimento")
     .select("*")
     .eq("id", id)
-    .eq("usuario_id", usuario_id)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    return res.status(500).json({
+      erro: "Erro ao buscar alimento.",
+      detalhe: error.message,
+    });
+  }
+
+  if (!data) {
     return res.status(404).json({ erro: "Alimento nao encontrado." });
   }
 
@@ -62,8 +63,6 @@ const buscarAlimentoPorId = async (req, res) => {
 
 // POST /alimentos
 const criarAlimento = async (req, res) => {
-  const usuario_id = req.usuario.id;
-
   const {
     nome,
     calorias,
@@ -74,8 +73,10 @@ const criarAlimento = async (req, res) => {
     unidade,
   } = req.body;
 
-  if (!nome) {
-    return res.status(400).json({ erro: "Nome do alimento e obrigatorio." });
+  if (!nome?.trim()) {
+    return res.status(400).json({
+      erro: "Nome do alimento e obrigatorio.",
+    });
   }
 
   if (
@@ -96,8 +97,7 @@ const criarAlimento = async (req, res) => {
     .from("alimento")
     .insert([
       {
-        usuario_id,
-        nome,
+        nome: nome.trim(),
         calorias,
         proteinas_g,
         carboidratos_g,
@@ -110,19 +110,20 @@ const criarAlimento = async (req, res) => {
     .single();
 
   if (error) {
-    return res
-      .status(500)
-      .json({ erro: "Erro ao criar alimento.", detalhe: error.message });
+    return res.status(500).json({
+      erro: "Erro ao criar alimento.",
+      detalhe: error.message,
+    });
   }
 
-  return res
-    .status(201)
-    .json({ mensagem: "Alimento criado com sucesso!", alimento: data });
+  return res.status(201).json({
+    mensagem: "Alimento criado com sucesso!",
+    alimento: data,
+  });
 };
 
 // PUT /alimentos/:id
 const editarAlimento = async (req, res) => {
-  const usuario_id = req.usuario.id;
   const { id } = req.params;
 
   const {
@@ -135,8 +136,10 @@ const editarAlimento = async (req, res) => {
     unidade,
   } = req.body;
 
-  if (!nome) {
-    return res.status(400).json({ erro: "Nome do alimento e obrigatorio." });
+  if (!nome?.trim()) {
+    return res.status(400).json({
+      erro: "Nome do alimento e obrigatorio.",
+    });
   }
 
   if (
@@ -156,7 +159,7 @@ const editarAlimento = async (req, res) => {
   const { data, error } = await supabase
     .from("alimento")
     .update({
-      nome,
+      nome: nome.trim(),
       calorias,
       proteinas_g,
       carboidratos_g,
@@ -165,37 +168,51 @@ const editarAlimento = async (req, res) => {
       unidade,
     })
     .eq("id", id)
-    .eq("usuario_id", usuario_id)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (error || !data) {
+  if (error) {
+    return res.status(500).json({
+      erro: "Erro ao atualizar alimento.",
+      detalhe: error.message,
+    });
+  }
+
+  if (!data) {
     return res.status(404).json({ erro: "Alimento nao encontrado." });
   }
 
-  return res
-    .status(200)
-    .json({ mensagem: "Alimento atualizado com sucesso!", alimento: data });
+  return res.status(200).json({
+    mensagem: "Alimento atualizado com sucesso!",
+    alimento: data,
+  });
 };
 
 // DELETE /alimentos/:id
 const deletarAlimento = async (req, res) => {
-  const usuario_id = req.usuario.id;
   const { id } = req.params;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("alimento")
     .delete()
     .eq("id", id)
-    .eq("usuario_id", usuario_id);
+    .select("id")
+    .maybeSingle();
 
   if (error) {
-    return res
-      .status(500)
-      .json({ erro: "Erro ao deletar alimento.", detalhe: error.message });
+    return res.status(500).json({
+      erro: "Erro ao deletar alimento.",
+      detalhe: error.message,
+    });
   }
 
-  return res.status(200).json({ mensagem: "Alimento deletado com sucesso!" });
+  if (!data) {
+    return res.status(404).json({ erro: "Alimento nao encontrado." });
+  }
+
+  return res.status(200).json({
+    mensagem: "Alimento deletado com sucesso!",
+  });
 };
 
 module.exports = {
