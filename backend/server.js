@@ -12,6 +12,7 @@ const alimentoRoutes = require("./src/routes/alimentoRoutes");
 const refeicaoRoutes = require("./src/routes/refeicaoRoutes");
 const suplementoRoutes = require("./src/routes/suplementoRoutes");
 const aguaRoutes = require("./src/routes/aguaRoutes");
+const dashboardRoutes = require("./src/routes/dashboardRoutes");
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use("/alimentos", alimentoRoutes);
 app.use("/refeicoes", refeicaoRoutes);
 app.use("/suplementos", suplementoRoutes);
 app.use("/agua", aguaRoutes);
+app.use("/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => {
   return res.json({ message: "AcadFitCeub API rodando!" });
