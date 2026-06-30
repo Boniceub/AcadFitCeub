@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 
 const API_URL = "http://localhost:3000";
+const META_AGUA_ML = 2000;
 
 const REFEICOES_PADRAO = [
   { tipo: "cafe_da_manha", nome: "Café da manhã", simbolo: "☀" },
@@ -48,6 +49,10 @@ export default function DiarioDieta() {
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
 
+  const [aguaTotal, setAguaTotal] = useState(0);
+  const [aguaRegistros, setAguaRegistros] = useState([]);
+  const [quantidadeAgua, setQuantidadeAgua] = useState("");
+
   const [abertas, setAbertas] = useState({
     cafe_da_manha: true,
     almoco: true,
@@ -76,15 +81,6 @@ export default function DiarioDieta() {
     );
   }, [dataParametro]);
 
-  useEffect(() => {
-    if (!token) {
-      navigate("/");
-      return;
-    }
-
-    buscarRefeicoes(dataSelecionada);
-  }, [dataSelecionada, token, navigate]);
-
   const requisicao = async (url, opcoes = {}) => {
     const resposta = await fetch(`${API_URL}${url}`, {
       ...opcoes,
@@ -105,12 +101,22 @@ export default function DiarioDieta() {
   };
 
   const buscarRefeicoes = async (data) => {
+    const dados = await requisicao(`/refeicoes?data=${data}`);
+    setRefeicoes(dados);
+  };
+
+  const buscarAgua = async (data) => {
+    const dados = await requisicao(`/agua?data=${data}`);
+    setAguaTotal(Number(dados.total_ml || 0));
+    setAguaRegistros(Array.isArray(dados.registros) ? dados.registros : []);
+  };
+
+  const carregarDadosDoDia = async (data) => {
     setCarregando(true);
     setErro("");
 
     try {
-      const dados = await requisicao(`/refeicoes?data=${data}`);
-      setRefeicoes(dados);
+      await Promise.all([buscarRefeicoes(data), buscarAgua(data)]);
     } catch (error) {
       setErro(error.message);
     } finally {
@@ -118,12 +124,68 @@ export default function DiarioDieta() {
     }
   };
 
+  useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    carregarDadosDoDia(dataSelecionada);
+  }, [dataSelecionada, token, navigate]);
+
   const buscarAlimentos = async () => {
     if (alimentos.length > 0) return;
 
     try {
       const dados = await requisicao("/alimentos");
       setAlimentos(dados);
+    } catch (error) {
+      setErro(error.message);
+    }
+  };
+
+  const registrarAgua = async (quantidadeMl) => {
+    const quantidadeNumerica = Number(quantidadeMl);
+
+    if (!quantidadeNumerica || quantidadeNumerica <= 0) {
+      setErro("Informe uma quantidade de água maior que zero.");
+      return;
+    }
+
+    setErro("");
+    setSucesso("");
+
+    try {
+      await requisicao("/agua", {
+        method: "POST",
+        body: JSON.stringify({
+          quantidade_ml: quantidadeNumerica,
+          data: dataSelecionada,
+        }),
+      });
+
+      setQuantidadeAgua("");
+      await buscarAgua(dataSelecionada);
+      setSucesso("Registro de água adicionado com sucesso.");
+    } catch (error) {
+      setErro(error.message);
+    }
+  };
+
+  const removerAgua = async (id) => {
+    const confirmar = window.confirm("Deseja remover este registro de água?");
+    if (!confirmar) return;
+
+    setErro("");
+    setSucesso("");
+
+    try {
+      await requisicao(`/agua/${id}`, {
+        method: "DELETE",
+      });
+
+      await buscarAgua(dataSelecionada);
+      setSucesso("Registro de água removido com sucesso.");
     } catch (error) {
       setErro(error.message);
     }
@@ -398,6 +460,16 @@ export default function DiarioDieta() {
           <ResumoCard label="Gorduras" valor={totais.gorduras_g} unidade="g" />
         </section>
 
+        <AguaWidget
+          totalMl={aguaTotal}
+          metaMl={META_AGUA_ML}
+          registros={aguaRegistros}
+          quantidade={quantidadeAgua}
+          onQuantidadeChange={setQuantidadeAgua}
+          onRegistrar={registrarAgua}
+          onRemover={removerAgua}
+        />
+
         {erro && <div style={alertaErro}>{erro}</div>}
         {sucesso && <div style={alertaSucesso}>{sucesso}</div>}
 
@@ -583,6 +655,96 @@ function ResumoCard({ label, valor, unidade, casas = 1 }) {
       <strong style={resumoValor}>{arredondar(valor, casas)}</strong>
       <span style={resumoUnidade}>{unidade}</span>
     </div>
+  );
+}
+
+function AguaWidget({
+  totalMl,
+  metaMl,
+  registros,
+  quantidade,
+  onQuantidadeChange,
+  onRegistrar,
+  onRemover,
+}) {
+  const progresso = Math.min((totalMl / metaMl) * 100, 100);
+
+  return (
+    <section style={aguaBox}>
+      <div style={aguaTopo}>
+        <div>
+          <span style={aguaLabel}>Água</span>
+          <strong style={aguaTotal}>{totalMl} ml</strong>
+          <p style={aguaMeta}>Meta diária: {metaMl} ml</p>
+        </div>
+
+        <div style={aguaAcoes}>
+          <button
+            type="button"
+            style={botaoAguaRapido}
+            onClick={() => onRegistrar(250)}
+          >
+            +250 ml
+          </button>
+
+          <button
+            type="button"
+            style={botaoAguaRapido}
+            onClick={() => onRegistrar(500)}
+          >
+            +500 ml
+          </button>
+        </div>
+      </div>
+
+      <div style={aguaBarraFundo}>
+        <div style={{ ...aguaBarraPreenchida, width: `${progresso}%` }} />
+      </div>
+
+      <div style={aguaRodape}>
+        <label style={aguaCampoLabel}>
+          Quantidade personalizada
+          <span style={aguaCampoLinha}>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={quantidade}
+              onChange={(event) => onQuantidadeChange(event.target.value)}
+              placeholder="Ex: 300"
+              style={campoAgua}
+            />
+            <span>ml</span>
+          </span>
+        </label>
+
+        <button
+          type="button"
+          style={botaoPrimario}
+          onClick={() => onRegistrar(quantidade)}
+        >
+          Registrar água
+        </button>
+      </div>
+
+      {registros.length > 0 && (
+        <div style={aguaRegistrosLista}>
+          {registros.map((registro) => (
+            <div key={registro.id} style={aguaRegistroItem}>
+              <span>{registro.quantidade_ml} ml</span>
+
+              <button
+                type="button"
+                style={botaoRemoverAgua}
+                onClick={() => onRemover(registro.id)}
+              >
+                Remover
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -772,6 +934,132 @@ const resumoUnidade = {
   color: "#d99a00",
   fontSize: 13,
   marginLeft: 6,
+};
+
+const aguaBox = {
+  background: "#fff",
+  border: "1px solid #dfe5eb",
+  borderRadius: 8,
+  padding: 20,
+  marginBottom: 22,
+};
+
+const aguaTopo = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 20,
+  alignItems: "flex-start",
+};
+
+const aguaLabel = {
+  display: "block",
+  color: "#6b7785",
+  fontSize: 12,
+  textTransform: "uppercase",
+  marginBottom: 8,
+};
+
+const aguaTotal = {
+  display: "block",
+  color: "#0b3764",
+  fontSize: 30,
+  lineHeight: 1,
+};
+
+const aguaMeta = {
+  margin: "8px 0 0",
+  color: "#778493",
+  fontSize: 13,
+};
+
+const aguaAcoes = {
+  display: "flex",
+  gap: 10,
+};
+
+const botaoAguaRapido = {
+  padding: "10px 14px",
+  border: "1px solid #d6dde4",
+  borderRadius: 8,
+  background: "#eef7ff",
+  color: "#0b3764",
+  fontWeight: 800,
+  cursor: "pointer",
+};
+
+const aguaBarraFundo = {
+  height: 10,
+  marginTop: 18,
+  borderRadius: 999,
+  background: "#e7edf3",
+  overflow: "hidden",
+};
+
+const aguaBarraPreenchida = {
+  height: "100%",
+  borderRadius: 999,
+  background: "#2b8fd8",
+  transition: "width 0.2s",
+};
+
+const aguaRodape = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "end",
+  gap: 16,
+  marginTop: 16,
+};
+
+const aguaCampoLabel = {
+  color: "#415365",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const aguaCampoLinha = {
+  display: "flex",
+  alignItems: "center",
+  gap: 7,
+  marginTop: 6,
+};
+
+const campoAgua = {
+  width: 120,
+  padding: "9px 10px",
+  border: "1px solid #d6dde4",
+  borderRadius: 8,
+  background: "#ffffff",
+  color: "#102b46",
+  caretColor: "#102b46",
+  colorScheme: "light",
+  outline: "none",
+};
+
+const aguaRegistrosLista = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+  marginTop: 16,
+};
+
+const aguaRegistroItem = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  padding: "7px 9px",
+  border: "1px solid #dce6ef",
+  borderRadius: 8,
+  background: "#f8fbfe",
+  color: "#173a59",
+  fontSize: 13,
+};
+
+const botaoRemoverAgua = {
+  border: 0,
+  background: "transparent",
+  color: "#b42318",
+  fontWeight: 700,
+  cursor: "pointer",
 };
 
 const listaRefeicoes = {
