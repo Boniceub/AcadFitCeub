@@ -11,8 +11,10 @@ const registroTreinoRoutes = require("./src/routes/registroTreinoRoutes");
 const alimentoRoutes = require("./src/routes/alimentoRoutes");
 const refeicaoRoutes = require("./src/routes/refeicaoRoutes");
 const suplementoRoutes = require("./src/routes/suplementoRoutes");
+const aguaRoutes = require("./src/routes/aguaRoutes");
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
@@ -24,8 +26,14 @@ app.use("/treinos-realizados", registroTreinoRoutes);
 app.use("/alimentos", alimentoRoutes);
 app.use("/refeicoes", refeicaoRoutes);
 app.use("/suplementos", suplementoRoutes);
+app.use("/agua", aguaRoutes);
 
-app.get("/", (req, res) => res.json({ message: "AcadFitCeub API rodando!" }));
+app.get("/", (req, res) => {
+  return res.json({ message: "AcadFitCeub API rodando!" });
+});
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor na porta ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`Servidor na porta ${PORT}`);
+});
