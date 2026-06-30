@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 
 const API_URL = "http://localhost:3000";
@@ -34,9 +34,13 @@ function calcularItem(item, campo) {
 
 export default function DiarioDieta() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const dataParametro = searchParams.get("data");
   const token = localStorage.getItem("token");
 
-  const [dataSelecionada, setDataSelecionada] = useState(obterDataLocal());
+  const [dataSelecionada, setDataSelecionada] = useState(
+    dataParametro || obterDataLocal(),
+  );
   const [refeicoes, setRefeicoes] = useState([]);
   const [alimentos, setAlimentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -58,6 +62,19 @@ export default function DiarioDieta() {
 
   const [criandoPersonalizada, setCriandoPersonalizada] = useState(false);
   const [nomePersonalizada, setNomePersonalizada] = useState("");
+
+  const alterarDataSelecionada = (novaData) => {
+    setDataSelecionada(novaData);
+    setSearchParams({ data: novaData });
+  };
+
+  useEffect(() => {
+    const dataDaUrl = dataParametro || obterDataLocal();
+
+    setDataSelecionada((dataAtual) =>
+      dataAtual === dataDaUrl ? dataAtual : dataDaUrl,
+    );
+  }, [dataParametro]);
 
   useEffect(() => {
     if (!token) {
@@ -347,7 +364,7 @@ export default function DiarioDieta() {
             <input
               type="date"
               value={dataSelecionada}
-              onChange={(event) => setDataSelecionada(event.target.value)}
+              onChange={(event) => alterarDataSelecionada(event.target.value)}
               style={campoData}
             />
 
@@ -719,6 +736,7 @@ const campoData = {
   borderRadius: 8,
   color: "#102b46",
   background: "#fff",
+  colorScheme: "light",
 };
 
 const gradeResumo = {
