@@ -213,6 +213,7 @@ export default function DiarioDieta() {
   const grupos = useMemo(() => {
     const padrao = REFEICOES_PADRAO.map((grupo) => ({
       ...grupo,
+      personalizada: false,
       refeicao: refeicoes.find((refeicao) => refeicao.tipo === grupo.tipo),
     }));
 
@@ -225,6 +226,7 @@ export default function DiarioDieta() {
         tipo: refeicao.tipo,
         nome: refeicao.nome || "Refeição personalizada",
         simbolo: "★",
+        personalizada: true,
         refeicao,
       }));
 
@@ -366,6 +368,36 @@ export default function DiarioDieta() {
     }
   };
 
+  const removerRefeicaoPersonalizada = async (grupo) => {
+    if (!grupo.refeicao) return;
+
+    const confirmar = window.confirm(
+      `Deseja remover a refeição "${grupo.nome}"? Os alimentos registrados nela também serão removidos.`,
+    );
+
+    if (!confirmar) return;
+
+    setErro("");
+    setSucesso("");
+
+    try {
+      await requisicao(`/refeicoes/${grupo.refeicao.id}`, {
+        method: "DELETE",
+      });
+
+      setAbertas((estado) => {
+        const novoEstado = { ...estado };
+        delete novoEstado[grupo.tipo];
+        return novoEstado;
+      });
+
+      await buscarRefeicoes(dataSelecionada);
+      setSucesso("Refeição personalizada removida com sucesso.");
+    } catch (error) {
+      setErro(error.message);
+    }
+  };
+
   const criarRefeicaoPersonalizada = async (event) => {
     event.preventDefault();
 
@@ -486,6 +518,7 @@ export default function DiarioDieta() {
                 onAdicionar={() => abrirCatalogo(grupo)}
                 onEditar={editarQuantidade}
                 onRemover={removerAlimento}
+                onRemoverRefeicao={removerRefeicaoPersonalizada}
               />
             ))}
 
@@ -755,6 +788,7 @@ function RefeicaoCard({
   onAdicionar,
   onEditar,
   onRemover,
+  onRemoverRefeicao,
 }) {
   const refeicao = grupo.refeicao;
   const itens = refeicao?.itens || [];
@@ -776,6 +810,17 @@ function RefeicaoCard({
         </button>
 
         <div style={acoesRefeicao}>
+          {grupo.personalizada && refeicao && (
+            <button
+              type="button"
+              onClick={() => onRemoverRefeicao(grupo)}
+              style={botaoRemoverRefeicao}
+              title="Remover refeição personalizada"
+            >
+              Remover
+            </button>
+          )}
+
           <strong style={caloriasRefeicao}>
             {arredondar(refeicao?.calorias, 0)}
             <span> kcal</span>
@@ -1074,6 +1119,16 @@ const refeicaoCard = {
   borderRadius: 8,
 };
 
+const botaoRemoverRefeicao = {
+  padding: "8px 10px",
+  border: "1px solid #f0c4c4",
+  borderRadius: 8,
+  background: "#fff5f5",
+  color: "#b42318",
+  fontWeight: 700,
+  cursor: "pointer",
+};
+
 const refeicaoCabecalho = {
   minHeight: 78,
   display: "flex",
@@ -1256,7 +1311,11 @@ const campoTexto = {
   padding: "10px 12px",
   border: "1px solid #d6dde4",
   borderRadius: 8,
+  background: "#ffffff",
   color: "#102b46",
+  caretColor: "#102b46",
+  colorScheme: "light",
+  outline: "none",
 };
 
 const botaoPrimario = {
