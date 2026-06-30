@@ -14,6 +14,31 @@ function obterDataLocal() {
   return `${ano}-${mes}-${dia}`;
 }
 
+function formatarDataISO(data) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, "0");
+  const dia = String(data.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function obterUltimosDias(quantidade) {
+  const dias = [];
+  const hoje = new Date();
+
+  for (let indice = quantidade - 1; indice >= 0; indice -= 1) {
+    const data = new Date(hoje);
+    data.setDate(hoje.getDate() - indice);
+
+    dias.push({
+      data: formatarDataISO(data),
+      label: data.toLocaleDateString("pt-BR", { weekday: "short" }),
+    });
+  }
+
+  return dias;
+}
+
 function arredondar(valor, casas = 1) {
   return Number(valor || 0).toFixed(casas);
 }
@@ -27,6 +52,7 @@ function Dashboard() {
   const [treinoHoje, setTreinoHoje] = useState(null);
   const [treinosRealizados, setTreinosRealizados] = useState([]);
   const [resumoDia, setResumoDia] = useState(null);
+  const [aguaHistorico, setAguaHistorico] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
@@ -48,15 +74,21 @@ function Dashboard() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [resFichas, resTreinoHoje, resTreinos, resResumoDia] =
-        await Promise.all([
-          fetch(`${API_URL}/fichas`, { headers }),
-          fetch(`${API_URL}/fichas/treino-do-dia`, { headers }),
-          fetch(`${API_URL}/treinos-realizados`, { headers }),
-          fetch(`${API_URL}/dashboard/${usuario.id}?data=${dataHoje}`, {
-            headers,
-          }),
-        ]);
+      const [
+        resFichas,
+        resTreinoHoje,
+        resTreinos,
+        resResumoDia,
+        resAguaHistorico,
+      ] = await Promise.all([
+        fetch(`${API_URL}/fichas`, { headers }),
+        fetch(`${API_URL}/fichas/treino-do-dia`, { headers }),
+        fetch(`${API_URL}/treinos-realizados`, { headers }),
+        fetch(`${API_URL}/dashboard/${usuario.id}?data=${dataHoje}`, {
+          headers,
+        }),
+        fetch(`${API_URL}/agua`, { headers }),
+      ]);
 
       if (resFichas.ok) {
         const data = await resFichas.json();
@@ -76,6 +108,11 @@ function Dashboard() {
       if (resResumoDia.ok) {
         const data = await resResumoDia.json();
         setResumoDia(data);
+      }
+
+      if (resAguaHistorico.ok) {
+        const data = await resAguaHistorico.json();
+        setAguaHistorico(Array.isArray(data.registros) ? data.registros : []);
       }
     } catch (error) {
       setErro("Não foi possível carregar os dados do dashboard.");
@@ -109,6 +146,39 @@ function Dashboard() {
 
     return sequencia;
   };
+
+  const dadosTreinoSemana = useMemo(() => {
+    const ultimosDias = obterUltimosDias(7);
+
+    return ultimosDias.map((dia) => {
+      const total = treinosRealizados.filter(
+        (treino) => treino.data === dia.data && treino.concluido,
+      ).length;
+
+      return {
+        ...dia,
+        total,
+      };
+    });
+  }, [treinosRealizados]);
+
+  const dadosAguaSemana = useMemo(() => {
+    const ultimosDias = obterUltimosDias(7);
+
+    return ultimosDias.map((dia) => {
+      const total = aguaHistorico
+        .filter((registro) => registro.data === dia.data)
+        .reduce(
+          (soma, registro) => soma + Number(registro.quantidade_ml || 0),
+          0,
+        );
+
+      return {
+        ...dia,
+        total,
+      };
+    });
+  }, [aguaHistorico]);
 
   const dieta = resumoDia?.dieta || {};
   const agua = resumoDia?.agua || {};
@@ -291,6 +361,31 @@ function Dashboard() {
           </div>
 
           <div style={painel}>
+            <h2 style={painelTitulo}>Treinos concluídos na semana</h2>
+
+            <GraficoBarras
+              dados={dadosTreinoSemana}
+              valorMaximo={Math.max(
+                1,
+                ...dadosTreinoSemana.map((item) => item.total),
+              )}
+              cor="#d8a20d"
+              sufixo=""
+            />
+          </div>
+
+          <div style={painel}>
+            <h2 style={painelTitulo}>Consumo de água na semana</h2>
+
+            <GraficoBarras
+              dados={dadosAguaSemana}
+              valorMaximo={META_AGUA_ML}
+              cor="#2b8fd8"
+              sufixo="ml"
+            />
+          </div>
+
+          <div style={painel}>
             <h2 style={painelTitulo}>Água do dia</h2>
 
             <div style={aguaResumo}>
@@ -377,6 +472,41 @@ function ResumoLinha({ label, valor }) {
     <div style={resumoLinha}>
       <span>{label}</span>
       <strong>{valor}</strong>
+    </div>
+  );
+}
+
+function GraficoBarras({ dados, valorMaximo, cor, sufixo }) {
+  return (
+    <div style={grafico}>
+      {dados.map((item) => {
+        const altura = Math.max(
+          (item.total / valorMaximo) * 100,
+          item.total > 0 ? 8 : 0,
+        );
+
+        return (
+          <div key={item.data} style={barraItem}>
+            <div style={barraArea}>
+              <div
+                title={`${item.total} ${sufixo}`}
+                style={{
+                  ...barraVertical,
+                  height: `${altura}%`,
+                  background: cor,
+                }}
+              />
+            </div>
+
+            <strong style={barraValor}>
+              {item.total}
+              {sufixo ? ` ${sufixo}` : ""}
+            </strong>
+
+            <span style={barraLabel}>{item.label.replace(".", "")}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -507,6 +637,53 @@ const barraPreenchida = {
   height: "100%",
   borderRadius: 999,
   background: "#2b8fd8",
+};
+
+const grafico = {
+  height: 220,
+  display: "grid",
+  gridTemplateColumns: "repeat(7, 1fr)",
+  gap: 12,
+  alignItems: "end",
+};
+
+const barraItem = {
+  minWidth: 0,
+  display: "grid",
+  gridTemplateRows: "1fr auto auto",
+  gap: 8,
+  alignItems: "end",
+  height: "100%",
+  textAlign: "center",
+};
+
+const barraArea = {
+  height: 130,
+  display: "flex",
+  alignItems: "end",
+  justifyContent: "center",
+  borderRadius: 8,
+  background: "#f3f6f9",
+  overflow: "hidden",
+};
+
+const barraVertical = {
+  width: "60%",
+  minHeight: 0,
+  borderRadius: "8px 8px 0 0",
+  transition: "height 0.2s",
+};
+
+const barraValor = {
+  color: "#102b46",
+  fontSize: 12,
+  minHeight: 16,
+};
+
+const barraLabel = {
+  color: "#7b8794",
+  fontSize: 12,
+  textTransform: "capitalize",
 };
 
 const listaCompacta = {
