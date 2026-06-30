@@ -1,8 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 
 const API_URL = "http://localhost:3000";
+const META_AGUA_ML = 2000;
+
+function obterDataLocal() {
+  const agora = new Date();
+  const ano = agora.getFullYear();
+  const mes = String(agora.getMonth() + 1).padStart(2, "0");
+  const dia = String(agora.getDate()).padStart(2, "0");
+
+  return `${ano}-${mes}-${dia}`;
+}
+
+function arredondar(valor, casas = 1) {
+  return Number(valor || 0).toFixed(casas);
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -12,27 +26,41 @@ function Dashboard() {
   const [fichas, setFichas] = useState([]);
   const [treinoHoje, setTreinoHoje] = useState(null);
   const [treinosRealizados, setTreinosRealizados] = useState([]);
+  const [resumoDia, setResumoDia] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState("");
+
+  const dataHoje = obterDataLocal();
 
   useEffect(() => {
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
     carregarDashboard();
   }, []);
 
   const carregarDashboard = async () => {
     setCarregando(true);
+    setErro("");
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [resFichas, resTreinoHoje, resTreinos] = await Promise.all([
-        fetch(`${API_URL}/fichas`, { headers }),
-        fetch(`${API_URL}/fichas/treino-do-dia`, { headers }),
-        fetch(`${API_URL}/treinos-realizados`, { headers }),
-      ]);
+      const [resFichas, resTreinoHoje, resTreinos, resResumoDia] =
+        await Promise.all([
+          fetch(`${API_URL}/fichas`, { headers }),
+          fetch(`${API_URL}/fichas/treino-do-dia`, { headers }),
+          fetch(`${API_URL}/treinos-realizados`, { headers }),
+          fetch(`${API_URL}/dashboard/${usuario.id}?data=${dataHoje}`, {
+            headers,
+          }),
+        ]);
 
       if (resFichas.ok) {
         const data = await resFichas.json();
-        setFichas(data);
+        setFichas(Array.isArray(data) ? data : []);
       }
 
       if (resTreinoHoje.ok) {
@@ -42,9 +70,15 @@ function Dashboard() {
 
       if (resTreinos.ok) {
         const data = await resTreinos.json();
-        setTreinosRealizados(data);
+        setTreinosRealizados(Array.isArray(data) ? data : []);
+      }
+
+      if (resResumoDia.ok) {
+        const data = await resResumoDia.json();
+        setResumoDia(data);
       }
     } catch (error) {
+      setErro("Não foi possível carregar os dados do dashboard.");
       console.error("Erro ao carregar dashboard:", error);
     } finally {
       setCarregando(false);
@@ -76,28 +110,58 @@ function Dashboard() {
     return sequencia;
   };
 
+  const dieta = resumoDia?.dieta || {};
+  const agua = resumoDia?.agua || {};
+  const suplementos = resumoDia?.suplementos || {};
+  const treinoResumo = resumoDia?.treino || {};
+
   const totalExerciciosHoje = treinoHoje?.ficha_exercicio?.length || 0;
   const sequencia = calcularSequencia();
+  const percentualAgua = Math.min(
+    ((Number(agua.total_ml) || 0) / META_AGUA_ML) * 100,
+    100,
+  );
+
+  const suplementosDoDia = suplementos.registros || [];
+  const refeicoesDoDia = dieta.refeicoes || [];
+
+  const treinoDoDiaTexto = useMemo(() => {
+    if (carregando) return "...";
+
+    if (treinoResumo.concluidos > 0) {
+      return `${treinoResumo.concluidos}`;
+    }
+
+    return totalExerciciosHoje;
+  }, [carregando, treinoResumo.concluidos, totalExerciciosHoje]);
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f6f9" }}>
       <Sidebar />
 
       <main style={{ marginLeft: 240, padding: "32px 30px" }}>
-        <header style={{ marginBottom: 26 }}>
-          <h1 style={titulo}>
-            Olá, {usuario?.nome?.split(" ")[0] || "usuário"}!
-          </h1>
+        <header style={cabecalho}>
+          <div>
+            <h1 style={titulo}>
+              Olá, {usuario?.nome?.split(" ")[0] || "usuário"}!
+            </h1>
 
-          <p style={subtitulo}>
-            {new Date().toLocaleDateString("pt-BR", {
-              weekday: "long",
-              day: "2-digit",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
+            <p style={subtitulo}>
+              {new Date().toLocaleDateString("pt-BR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+
+          <button style={botaoSecundario} onClick={carregarDashboard}>
+            Atualizar
+          </button>
         </header>
+
+        {erro && <div style={alertaErro}>{erro}</div>}
 
         <section style={cardsGrid}>
           <Card
@@ -108,17 +172,27 @@ function Dashboard() {
 
           <Card
             label="Treino de hoje"
-            value={carregando ? "..." : totalExerciciosHoje}
-            detail="exercícios planejados"
+            value={treinoDoDiaTexto}
+            detail={
+              treinoResumo.concluidos > 0
+                ? "treinos concluídos hoje"
+                : "exercícios planejados"
+            }
           />
 
           <Card
-            label="Sequência"
-            value={carregando ? "..." : `${sequencia} dias`}
-            detail="treinos consecutivos"
+            label="Dieta"
+            value={carregando ? "..." : `${arredondar(dieta.calorias, 0)} kcal`}
+            detail={`${arredondar(dieta.proteinas_g)}g prot · ${arredondar(
+              dieta.carboidratos_g,
+            )}g carb · ${arredondar(dieta.gorduras_g)}g gord`}
           />
 
-          <Card label="Dieta" value="Em breve" detail="calorias e macros" />
+          <Card
+            label="Água"
+            value={carregando ? "..." : `${agua.total_ml || 0} ml`}
+            detail={`Meta: ${META_AGUA_ML} ml`}
+          />
         </section>
 
         <section style={conteudoGrid}>
@@ -185,22 +259,102 @@ function Dashboard() {
           </div>
 
           <div style={painel}>
-            <h2 style={painelTitulo}>Resumo do projeto</h2>
+            <h2 style={painelTitulo}>Macros e suplementos</h2>
 
-            <ResumoLinha label="Fichas criadas" valor={fichas.length} />
             <ResumoLinha
-              label="Treinos registrados"
-              valor={treinosRealizados.length}
+              label="Calorias do dia"
+              valor={`${arredondar(dieta.calorias, 0)} kcal`}
             />
-            <ResumoLinha label="Treinos neste mês" valor={treinosEsteMes} />
-            <ResumoLinha label="Sequência atual" valor={`${sequencia} dias`} />
+            <ResumoLinha
+              label="Proteínas"
+              valor={`${arredondar(dieta.proteinas_g)} g`}
+            />
+            <ResumoLinha
+              label="Carboidratos"
+              valor={`${arredondar(dieta.carboidratos_g)} g`}
+            />
+            <ResumoLinha
+              label="Gorduras"
+              valor={`${arredondar(dieta.gorduras_g)} g`}
+            />
+            <ResumoLinha
+              label="Suplementos"
+              valor={suplementos.total_registros || 0}
+            />
 
             <button
               style={{ ...botaoSecundario, marginTop: 18 }}
-              onClick={() => navigate("/meus-treinos")}
+              onClick={() => navigate(`/dieta?data=${dataHoje}`)}
             >
-              Ver meus treinos
+              Abrir diário de dieta
             </button>
+          </div>
+
+          <div style={painel}>
+            <h2 style={painelTitulo}>Água do dia</h2>
+
+            <div style={aguaResumo}>
+              <strong style={aguaValor}>{agua.total_ml || 0} ml</strong>
+              <span style={textoCinza}>de {META_AGUA_ML} ml</span>
+            </div>
+
+            <div style={barraFundo}>
+              <div
+                style={{ ...barraPreenchida, width: `${percentualAgua}%` }}
+              />
+            </div>
+
+            <p style={textoCinza}>
+              {agua.total_registros || 0} registro
+              {(agua.total_registros || 0) === 1 ? "" : "s"} de água hoje.
+            </p>
+
+            <button
+              style={botaoSecundario}
+              onClick={() => navigate(`/dieta?data=${dataHoje}`)}
+            >
+              Registrar água
+            </button>
+          </div>
+
+          <div style={painel}>
+            <h2 style={painelTitulo}>Resumo do dia</h2>
+
+            <ResumoLinha
+              label="Refeições registradas"
+              valor={dieta.total_refeicoes || 0}
+            />
+            <ResumoLinha
+              label="Suplementos registrados"
+              valor={suplementos.total_registros || 0}
+            />
+            <ResumoLinha
+              label="Treinos concluídos"
+              valor={treinoResumo.concluidos || 0}
+            />
+            <ResumoLinha label="Sequência atual" valor={`${sequencia} dias`} />
+
+            {refeicoesDoDia.length > 0 && (
+              <div style={listaCompacta}>
+                {refeicoesDoDia.slice(0, 3).map((refeicao) => (
+                  <div key={refeicao.id} style={itemCompacto}>
+                    <strong>{refeicao.nome || refeicao.tipo}</strong>
+                    <span>{arredondar(refeicao.calorias, 0)} kcal</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {suplementosDoDia.length > 0 && (
+              <div style={listaCompacta}>
+                {suplementosDoDia.slice(0, 3).map((suplemento) => (
+                  <div key={suplemento.id} style={itemCompacto}>
+                    <strong>{suplemento.nome}</strong>
+                    <span>{suplemento.horario?.slice(0, 5) || "--:--"}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>
@@ -226,6 +380,13 @@ function ResumoLinha({ label, valor }) {
     </div>
   );
 }
+
+const cabecalho = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  marginBottom: 26,
+};
 
 const titulo = {
   margin: 0,
@@ -320,6 +481,59 @@ const resumoLinha = {
   borderBottom: "1px solid #edf1f5",
   padding: "12px 0",
   color: "#374151",
+};
+
+const aguaResumo = {
+  display: "flex",
+  alignItems: "baseline",
+  gap: 10,
+  marginBottom: 14,
+};
+
+const aguaValor = {
+  color: "#0b3764",
+  fontSize: 32,
+};
+
+const barraFundo = {
+  height: 10,
+  borderRadius: 999,
+  background: "#e7edf3",
+  overflow: "hidden",
+  marginBottom: 14,
+};
+
+const barraPreenchida = {
+  height: "100%",
+  borderRadius: 999,
+  background: "#2b8fd8",
+};
+
+const listaCompacta = {
+  marginTop: 14,
+  display: "grid",
+  gap: 8,
+};
+
+const itemCompacto = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "9px 10px",
+  border: "1px solid #edf1f5",
+  borderRadius: 8,
+  color: "#102b46",
+  background: "#fbfcfd",
+  fontSize: 13,
+};
+
+const alertaErro = {
+  marginBottom: 16,
+  padding: "11px 14px",
+  border: "1px solid #f0c4c4",
+  borderRadius: 8,
+  background: "#fff4f4",
+  color: "#b42318",
 };
 
 const botaoPrimario = {
