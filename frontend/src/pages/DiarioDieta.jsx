@@ -353,7 +353,7 @@ export default function DiarioDieta() {
 
             <button
               type="button"
-              onClick={() => navigate("/suplementos")}
+              onClick={() => navigate(`/suplementos?data=${dataSelecionada}`)}
               style={botaoSecundario}
             >
               Suplementos

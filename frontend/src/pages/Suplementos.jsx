@@ -1,26 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import Sidebar from "../components/Sidebar";
 
 const API_URL = "http://localhost:3000";
 
 const dataHoje = () => new Date().toISOString().split("T")[0];
 
+const formatarData = (data) => {
+  if (!data) return "";
+
+  const [ano, mes, dia] = data.split("-");
+  return `${dia}/${mes}/${ano}`;
+};
+
 function Suplementos() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const dataParametro = searchParams.get("data") || dataHoje();
 
   const [suplementos, setSuplementos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [mensagem, setMensagem] = useState("");
-  const [dataSelecionada, setDataSelecionada] = useState(dataHoje());
   const [editandoId, setEditandoId] = useState(null);
 
   const [formulario, setFormulario] = useState({
     nome: "",
     dosagem: "",
     horario: "",
-    data: dataHoje(),
     observacoes: "",
   });
 
@@ -39,18 +48,11 @@ function Suplementos() {
     });
   }, [suplementos]);
 
-  const totalSuplementos = suplementos.length;
-
-  const proximosHorarios = useMemo(() => {
-    return suplementosOrdenados.filter((suplemento) => suplemento.horario);
-  }, [suplementosOrdenados]);
-
   const limparFormulario = () => {
     setFormulario({
       nome: "",
       dosagem: "",
       horario: "",
-      data: dataSelecionada,
       observacoes: "",
     });
     setEditandoId(null);
@@ -62,7 +64,7 @@ function Suplementos() {
       setErro("");
 
       const resposta = await fetch(
-        `${API_URL}/suplementos?data=${dataSelecionada}`,
+        `${API_URL}/suplementos?data=${dataParametro}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -91,14 +93,7 @@ function Suplementos() {
     }
 
     buscarSuplementos();
-  }, [dataSelecionada]);
-
-  useEffect(() => {
-    setFormulario((formularioAtual) => ({
-      ...formularioAtual,
-      data: dataSelecionada,
-    }));
-  }, [dataSelecionada]);
+  }, [dataParametro, token, navigate]);
 
   const alterarCampo = (evento) => {
     const { name, value } = evento.target;
@@ -140,7 +135,7 @@ function Suplementos() {
           nome: formulario.nome.trim(),
           dosagem: formulario.dosagem.trim(),
           horario: formulario.horario || null,
-          data: formulario.data,
+          data: dataParametro,
           observacoes: formulario.observacoes.trim() || null,
         }),
       });
@@ -172,7 +167,6 @@ function Suplementos() {
       nome: suplemento.nome || "",
       dosagem: suplemento.dosagem || "",
       horario: suplemento.horario ? suplemento.horario.slice(0, 5) : "",
-      data: suplemento.data || dataSelecionada,
       observacoes: suplemento.observacoes || "",
     });
 
@@ -208,95 +202,92 @@ function Suplementos() {
   };
 
   return (
-    <main style={estilos.pagina}>
-      <section style={estilos.cabecalho}>
-        <div>
-          <h1 style={estilos.titulo}>Suplementos</h1>
-          <p style={estilos.subtitulo}>
-            Registre seus suplementos, dosagens e horarios do dia.
-          </p>
-        </div>
+    <>
+      <Sidebar />
 
-        <button
-          style={estilos.botaoSecundario}
-          onClick={() => navigate("/dieta")}
-        >
-          Voltar ao diario
-        </button>
-      </section>
-
-      <section style={estilos.cardsResumo}>
-        <article style={estilos.cardResumo}>
-          <span style={estilos.cardLabel}>Data</span>
-          <input
-            type="date"
-            value={dataSelecionada}
-            onChange={(evento) => setDataSelecionada(evento.target.value)}
-            style={estilos.inputData}
-          />
-        </article>
-
-        <article style={estilos.cardResumo}>
-          <span style={estilos.cardLabel}>Registros</span>
-          <strong style={estilos.cardValor}>{totalSuplementos}</strong>
-          <small style={estilos.cardDescricao}>suplementos no dia</small>
-        </article>
-
-        <article style={estilos.cardResumo}>
-          <span style={estilos.cardLabel}>Proximos horarios</span>
-          <strong style={estilos.cardValor}>{proximosHorarios.length}</strong>
-          <small style={estilos.cardDescricao}>com horario definido</small>
-        </article>
-      </section>
-
-      <section style={estilos.conteudo}>
-        <form style={estilos.formulario} onSubmit={salvarSuplemento}>
-          <div style={estilos.formCabecalho}>
-            <div>
-              <h2 style={estilos.subtituloBloco}>
-                {editandoId ? "Editar suplemento" : "Novo suplemento"}
-              </h2>
-              <p style={estilos.textoApoio}>
-                Preencha os dados para registrar o consumo.
-              </p>
-            </div>
-
-            {editandoId && (
-              <button
-                type="button"
-                style={estilos.botaoLimpar}
-                onClick={limparFormulario}
-              >
-                Cancelar
-              </button>
-            )}
+      <main style={estilos.pagina}>
+        <section style={estilos.cabecalho}>
+          <div>
+            <h1 style={estilos.titulo}>Suplementos</h1>
+            <p style={estilos.subtitulo}>
+              Registre os suplementos ingeridos em {formatarData(dataParametro)}
+              .
+            </p>
           </div>
 
-          <label style={estilos.campo}>
-            <span style={estilos.label}>Nome</span>
-            <input
-              type="text"
-              name="nome"
-              value={formulario.nome}
-              onChange={alterarCampo}
-              placeholder="Ex: Creatina"
-              style={estilos.input}
-            />
-          </label>
+          <button
+            style={estilos.botaoSecundario}
+            onClick={() => navigate(`/dieta?data=${dataParametro}`)}
+          >
+            Voltar ao diario
+          </button>
+        </section>
 
-          <label style={estilos.campo}>
-            <span style={estilos.label}>Dosagem</span>
-            <input
-              type="text"
-              name="dosagem"
-              value={formulario.dosagem}
-              onChange={alterarCampo}
-              placeholder="Ex: 5g"
-              style={estilos.input}
-            />
-          </label>
+        <section style={estilos.cardsResumo}>
+          <article style={estilos.cardResumo}>
+            <span style={estilos.cardLabel}>Data selecionada</span>
+            <strong style={estilos.cardValorData}>
+              {formatarData(dataParametro)}
+            </strong>
+            <small style={estilos.cardDescricao}>
+              definida no diario de dieta
+            </small>
+          </article>
 
-          <div style={estilos.linhaCampos}>
+          <article style={estilos.cardResumo}>
+            <span style={estilos.cardLabel}>Registros</span>
+            <strong style={estilos.cardValor}>{suplementos.length}</strong>
+            <small style={estilos.cardDescricao}>suplementos no dia</small>
+          </article>
+        </section>
+
+        <section style={estilos.conteudo}>
+          <form style={estilos.formulario} onSubmit={salvarSuplemento}>
+            <div style={estilos.formCabecalho}>
+              <div>
+                <h2 style={estilos.subtituloBloco}>
+                  {editandoId ? "Editar suplemento" : "Novo suplemento"}
+                </h2>
+                <p style={estilos.textoApoio}>
+                  Informe suplemento, dosagem e horario de ingestao.
+                </p>
+              </div>
+
+              {editandoId && (
+                <button
+                  type="button"
+                  style={estilos.botaoLimpar}
+                  onClick={limparFormulario}
+                >
+                  Cancelar
+                </button>
+              )}
+            </div>
+
+            <label style={estilos.campo}>
+              <span style={estilos.label}>Nome</span>
+              <input
+                type="text"
+                name="nome"
+                value={formulario.nome}
+                onChange={alterarCampo}
+                placeholder="Ex: Creatina"
+                style={estilos.input}
+              />
+            </label>
+
+            <label style={estilos.campo}>
+              <span style={estilos.label}>Dosagem</span>
+              <input
+                type="text"
+                name="dosagem"
+                value={formulario.dosagem}
+                onChange={alterarCampo}
+                placeholder="Ex: 5g"
+                style={estilos.input}
+              />
+            </label>
+
             <label style={estilos.campo}>
               <span style={estilos.label}>Horario</span>
               <input
@@ -309,116 +300,106 @@ function Suplementos() {
             </label>
 
             <label style={estilos.campo}>
-              <span style={estilos.label}>Data</span>
-              <input
-                type="date"
-                name="data"
-                value={formulario.data}
+              <span style={estilos.label}>Observacoes</span>
+              <textarea
+                name="observacoes"
+                value={formulario.observacoes}
                 onChange={alterarCampo}
-                style={estilos.input}
+                placeholder="Ex: tomar depois do treino"
+                style={estilos.textarea}
               />
             </label>
-          </div>
 
-          <label style={estilos.campo}>
-            <span style={estilos.label}>Observacoes</span>
-            <textarea
-              name="observacoes"
-              value={formulario.observacoes}
-              onChange={alterarCampo}
-              placeholder="Ex: tomar depois do treino"
-              style={estilos.textarea}
-            />
-          </label>
+            {erro && <p style={estilos.erro}>{erro}</p>}
+            {mensagem && <p style={estilos.sucesso}>{mensagem}</p>}
 
-          {erro && <p style={estilos.erro}>{erro}</p>}
-          {mensagem && <p style={estilos.sucesso}>{mensagem}</p>}
+            <button
+              type="submit"
+              style={estilos.botaoPrincipal}
+              disabled={salvando}
+            >
+              {salvando
+                ? "Salvando..."
+                : editandoId
+                  ? "Atualizar suplemento"
+                  : "Registrar suplemento"}
+            </button>
+          </form>
 
-          <button
-            type="submit"
-            style={estilos.botaoPrincipal}
-            disabled={salvando}
-          >
-            {salvando
-              ? "Salvando..."
-              : editandoId
-                ? "Atualizar suplemento"
-                : "Registrar suplemento"}
-          </button>
-        </form>
-
-        <section style={estilos.lista}>
-          <div style={estilos.listaCabecalho}>
-            <div>
-              <h2 style={estilos.subtituloBloco}>Registros do dia</h2>
-              <p style={estilos.textoApoio}>
-                Acompanhe os suplementos cadastrados para a data selecionada.
-              </p>
+          <section style={estilos.lista}>
+            <div style={estilos.listaCabecalho}>
+              <div>
+                <h2 style={estilos.subtituloBloco}>Registros do dia</h2>
+                <p style={estilos.textoApoio}>
+                  Suplementos registrados para {formatarData(dataParametro)}.
+                </p>
+              </div>
             </div>
-          </div>
 
-          {carregando ? (
-            <div style={estilos.estadoVazio}>Carregando suplementos...</div>
-          ) : suplementosOrdenados.length === 0 ? (
-            <div style={estilos.estadoVazio}>
-              Nenhum suplemento registrado para esta data.
-            </div>
-          ) : (
-            <div style={estilos.listaItens}>
-              {suplementosOrdenados.map((suplemento) => (
-                <article key={suplemento.id} style={estilos.item}>
-                  <div style={estilos.itemHorario}>
-                    {suplemento.horario
-                      ? suplemento.horario.slice(0, 5)
-                      : "--:--"}
-                  </div>
+            {carregando ? (
+              <div style={estilos.estadoVazio}>Carregando suplementos...</div>
+            ) : suplementosOrdenados.length === 0 ? (
+              <div style={estilos.estadoVazio}>
+                Nenhum suplemento registrado para esta data.
+              </div>
+            ) : (
+              <div style={estilos.listaItens}>
+                {suplementosOrdenados.map((suplemento) => (
+                  <article key={suplemento.id} style={estilos.item}>
+                    <div style={estilos.itemHorario}>
+                      {suplemento.horario
+                        ? suplemento.horario.slice(0, 5)
+                        : "--:--"}
+                    </div>
 
-                  <div style={estilos.itemConteudo}>
-                    <strong style={estilos.itemTitulo}>
-                      {suplemento.nome}
-                    </strong>
-                    <span style={estilos.itemDescricao}>
-                      Dosagem: {suplemento.dosagem}
-                    </span>
-
-                    {suplemento.observacoes && (
-                      <span style={estilos.itemObservacao}>
-                        {suplemento.observacoes}
+                    <div style={estilos.itemConteudo}>
+                      <strong style={estilos.itemTitulo}>
+                        {suplemento.nome}
+                      </strong>
+                      <span style={estilos.itemDescricao}>
+                        Dosagem: {suplemento.dosagem}
                       </span>
-                    )}
-                  </div>
 
-                  <div style={estilos.itemAcoes}>
-                    <button
-                      type="button"
-                      style={estilos.botaoEditar}
-                      onClick={() => prepararEdicao(suplemento)}
-                    >
-                      Editar
-                    </button>
+                      {suplemento.observacoes && (
+                        <span style={estilos.itemObservacao}>
+                          {suplemento.observacoes}
+                        </span>
+                      )}
+                    </div>
 
-                    <button
-                      type="button"
-                      style={estilos.botaoExcluir}
-                      onClick={() => deletarSuplemento(suplemento.id)}
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+                    <div style={estilos.itemAcoes}>
+                      <button
+                        type="button"
+                        style={estilos.botaoEditar}
+                        onClick={() => prepararEdicao(suplemento)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        style={estilos.botaoExcluir}
+                        onClick={() => deletarSuplemento(suplemento.id)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </section>
-      </section>
-    </main>
+      </main>
+    </>
   );
 }
 
 const estilos = {
   pagina: {
     minHeight: "100vh",
-    width: "100%",
+    width: "calc(100% - 240px)",
+    marginLeft: 240,
     background: "#f1f5f9",
     color: "#102b46",
     padding: "28px 32px",
@@ -453,7 +434,7 @@ const estilos = {
   },
   cardsResumo: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: "16px",
     marginBottom: "24px",
   },
@@ -478,22 +459,17 @@ const estilos = {
     fontSize: "32px",
     lineHeight: 1,
   },
+  cardValorData: {
+    display: "block",
+    color: "#08345c",
+    fontSize: "28px",
+    lineHeight: 1,
+  },
   cardDescricao: {
     display: "block",
     color: "#d99a00",
     marginTop: "10px",
     fontSize: "13px",
-  },
-  inputData: {
-    width: "100%",
-    border: "1px solid #d9e2ec",
-    borderRadius: "8px",
-    padding: "12px",
-    fontSize: "15px",
-    background: "#ffffff",
-    color: "#102b46",
-    colorScheme: "light",
-    boxSizing: "border-box",
   },
   conteudo: {
     display: "grid",
@@ -562,11 +538,6 @@ const estilos = {
     resize: "vertical",
     boxSizing: "border-box",
     outline: "none",
-  },
-  linhaCampos: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
   },
   botaoPrincipal: {
     width: "100%",
