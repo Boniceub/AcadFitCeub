@@ -132,8 +132,29 @@ export default function Sidebar() {
         >
           Conta
         </p>
-        <div style={menuItem(false)}>
-          <span style={{ width: 22 }}>★</span>
+        <div
+          style={menuItem(location.pathname === "/perfil")}
+          onClick={() => navigate("/perfil")}
+        >
+          <span
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background:
+                location.pathname === "/perfil"
+                  ? "#d8a20d"
+                  : "rgba(255,255,255,0.08)",
+              color: location.pathname === "/perfil" ? "#102b46" : "#dbeafe",
+              fontSize: 12,
+              fontWeight: 800,
+            }}
+          >
+            ★
+          </span>
           <span>Perfil</span>
         </div>
         <div style={menuItem(false)}>
