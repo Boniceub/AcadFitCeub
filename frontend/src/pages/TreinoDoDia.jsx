@@ -12,6 +12,7 @@ export default function TreinoDoDia() {
   const [seriesPorExercicio, setSeriesPorExercicio] = useState({});
   const [exerciciosConcluidos, setExerciciosConcluidos] = useState({});
   const [treinoIniciado, setTreinoIniciado] = useState(false);
+  const [treinoFinalizado, setTreinoFinalizado] = useState(false);
   const [indiceAtual, setIndiceAtual] = useState(0);
   const [carregando, setCarregando] = useState(true);
   const [registrando, setRegistrando] = useState(false);
@@ -133,7 +134,6 @@ export default function TreinoDoDia() {
 
   const exercicioTemSerieValida = (fichaExercicioId) => {
     const series = seriesPorExercicio[fichaExercicioId] || [];
-
     return series.some((serie) => Number(serie.repeticoes) > 0);
   };
 
@@ -230,7 +230,7 @@ export default function TreinoDoDia() {
       if (!res.ok) throw new Error(data.erro);
 
       setSucesso("Treino finalizado e registrado com sucesso!");
-      setTimeout(() => navigate("/meus-treinos"), 2000);
+      setTreinoFinalizado(true);
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -332,210 +332,279 @@ export default function TreinoDoDia() {
           </>
         )}
 
-        {ficha && !carregando && treinoIniciado && exercicioAtual && (
-          <>
-            <section style={{ ...panelStyle, marginBottom: 20 }}>
-              <div style={progressoHeader}>
-                <div>
-                  <h2 style={{ margin: 0, color: "#102b46", fontSize: 20 }}>
-                    {ficha.nome}
-                  </h2>
+        {ficha && !carregando && treinoFinalizado && (
+          <section style={panelStyle}>
+            <h2 style={{ margin: 0, color: "#102b46", fontSize: 24 }}>
+              Resumo do treino
+            </h2>
 
-                  <p style={{ margin: "4px 0 0", color: "#7b8794" }}>
-                    Exercicio {indiceAtual + 1} de {totalExercicios} ·{" "}
-                    {totalConcluidos} concluidos
-                  </p>
-                </div>
+            <p style={{ margin: "8px 0 22px", color: "#7b8794" }}>
+              Confira as series registradas antes de voltar para seus treinos.
+            </p>
 
-                <span style={percentualStyle}>{Math.round(progresso)}%</span>
-              </div>
+            <div style={resumoTreinoLista}>
+              {ficha.ficha_exercicio?.map((item) => {
+                const series = seriesPorExercicio[item.id] || [];
 
-              <div style={barraProgresso}>
-                <div
-                  style={{
-                    height: "100%",
-                    width: `${progresso}%`,
-                    background: "#d8a20d",
-                    borderRadius: 99,
-                    transition: "width 0.3s",
-                  }}
-                />
-              </div>
-            </section>
+                return (
+                  <div key={item.id} style={resumoTreinoCard}>
+                    <h3 style={{ margin: 0, color: "#102b46", fontSize: 18 }}>
+                      {item.exercicio?.nome}
+                    </h3>
 
-            <section style={panelStyle}>
-              <div style={exercicioHeader}>
-                <div>
-                  <h2 style={{ margin: 0, color: "#102b46", fontSize: 24 }}>
-                    {exercicioAtual.exercicio?.nome}
-                  </h2>
+                    <p style={{ margin: "4px 0 12px", color: "#7b8794" }}>
+                      {item.exercicio?.musculo_alvo}
+                    </p>
 
-                  <p style={{ margin: "6px 0 0", color: "#7b8794" }}>
-                    {exercicioAtual.exercicio?.musculo_alvo}
-                  </p>
+                    <div style={resumoSeriesHeader}>
+                      <span>Serie</span>
+                      <span>Repeticoes</span>
+                      <span>Carga</span>
+                    </div>
 
-                  <p style={{ margin: "10px 0 0", color: "#56616d" }}>
-                    Planejado: {exercicioAtual.series}x
-                    {exercicioAtual.repeticoes}
-                    {exercicioAtual.carga_kg
-                      ? ` - ${exercicioAtual.carga_kg} kg`
-                      : ""}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => adicionarSerie(exercicioAtual.id)}
-                  style={smallPrimaryButton}
-                >
-                  + Serie
-                </button>
-              </div>
-
-              <div style={seriesHeader}>
-                <span>Serie</span>
-                <span>Repeticoes</span>
-                <span>Carga</span>
-                <span></span>
-              </div>
-
-              {(seriesPorExercicio[exercicioAtual.id] || []).map(
-                (serie, index) => (
-                  <div key={`${exercicioAtual.id}-${index}`} style={serieRow}>
-                    <strong style={{ color: "#102b46" }}>
-                      {serie.numero_serie}
-                    </strong>
-
-                    <input
-                      type="number"
-                      min="1"
-                      value={serie.repeticoes}
-                      onChange={(e) =>
-                        atualizarSerie(
-                          exercicioAtual.id,
-                          index,
-                          "repeticoes",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="Ex: 10"
-                      style={inputStyle}
-                    />
-
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={serie.carga_kg}
-                      onChange={(e) =>
-                        atualizarSerie(
-                          exercicioAtual.id,
-                          index,
-                          "carga_kg",
-                          e.target.value,
-                        )
-                      }
-                      placeholder="kg"
-                      style={inputStyle}
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() => removerSerie(exercicioAtual.id, index)}
-                      disabled={
-                        (seriesPorExercicio[exercicioAtual.id] || []).length <=
-                        1
-                      }
-                      style={{
-                        ...removeButton,
-                        opacity:
-                          (seriesPorExercicio[exercicioAtual.id] || [])
-                            .length <= 1
-                            ? 0.35
-                            : 1,
-                        cursor:
-                          (seriesPorExercicio[exercicioAtual.id] || [])
-                            .length <= 1
-                            ? "not-allowed"
-                            : "pointer",
-                      }}
-                    >
-                      Remover
-                    </button>
+                    {series
+                      .filter((serie) => Number(serie.repeticoes) > 0)
+                      .map((serie, index) => (
+                        <div
+                          key={`${item.id}-resumo-${index}`}
+                          style={resumoSerieRow}
+                        >
+                          <strong>{index + 1}</strong>
+                          <span>{serie.repeticoes}</span>
+                          <span>
+                            {serie.carga_kg === "" ||
+                            serie.carga_kg === null ||
+                            serie.carga_kg === undefined
+                              ? "-"
+                              : `${serie.carga_kg} kg`}
+                          </span>
+                        </div>
+                      ))}
                   </div>
-                ),
-              )}
+                );
+              })}
+            </div>
 
-              <div style={acoesTreino}>
+            <div style={{ marginTop: 22 }}>
+              <button
+                type="button"
+                onClick={() => navigate("/meus-treinos")}
+                style={primaryButton}
+              >
+                Voltar para meus treinos
+              </button>
+            </div>
+          </section>
+        )}
+
+        {ficha &&
+          !carregando &&
+          treinoIniciado &&
+          !treinoFinalizado &&
+          exercicioAtual && (
+            <>
+              <section style={{ ...panelStyle, marginBottom: 20 }}>
+                <div style={progressoHeader}>
+                  <div>
+                    <h2 style={{ margin: 0, color: "#102b46", fontSize: 20 }}>
+                      {ficha.nome}
+                    </h2>
+
+                    <p style={{ margin: "4px 0 0", color: "#7b8794" }}>
+                      Exercicio {indiceAtual + 1} de {totalExercicios} ·{" "}
+                      {totalConcluidos} concluidos
+                    </p>
+                  </div>
+
+                  <span style={percentualStyle}>{Math.round(progresso)}%</span>
+                </div>
+
+                <div style={barraProgresso}>
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${progresso}%`,
+                      background: "#d8a20d",
+                      borderRadius: 99,
+                      transition: "width 0.3s",
+                    }}
+                  />
+                </div>
+              </section>
+
+              <section style={panelStyle}>
+                <div style={exercicioHeader}>
+                  <div>
+                    <h2 style={{ margin: 0, color: "#102b46", fontSize: 24 }}>
+                      {exercicioAtual.exercicio?.nome}
+                    </h2>
+
+                    <p style={{ margin: "6px 0 0", color: "#7b8794" }}>
+                      {exercicioAtual.exercicio?.musculo_alvo}
+                    </p>
+
+                    <p style={{ margin: "10px 0 0", color: "#56616d" }}>
+                      Planejado: {exercicioAtual.series}x
+                      {exercicioAtual.repeticoes}
+                      {exercicioAtual.carga_kg
+                        ? ` - ${exercicioAtual.carga_kg} kg`
+                        : ""}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => adicionarSerie(exercicioAtual.id)}
+                    style={smallPrimaryButton}
+                  >
+                    + Serie
+                  </button>
+                </div>
+
+                <div style={seriesHeader}>
+                  <span>Serie</span>
+                  <span>Repeticoes</span>
+                  <span>Carga</span>
+                  <span></span>
+                </div>
+
+                {(seriesPorExercicio[exercicioAtual.id] || []).map(
+                  (serie, index) => (
+                    <div key={`${exercicioAtual.id}-${index}`} style={serieRow}>
+                      <strong style={{ color: "#102b46" }}>
+                        {serie.numero_serie}
+                      </strong>
+
+                      <input
+                        type="number"
+                        min="1"
+                        value={serie.repeticoes}
+                        onChange={(e) =>
+                          atualizarSerie(
+                            exercicioAtual.id,
+                            index,
+                            "repeticoes",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="Ex: 10"
+                        style={inputStyle}
+                      />
+
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={serie.carga_kg}
+                        onChange={(e) =>
+                          atualizarSerie(
+                            exercicioAtual.id,
+                            index,
+                            "carga_kg",
+                            e.target.value,
+                          )
+                        }
+                        placeholder="kg"
+                        style={inputStyle}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => removerSerie(exercicioAtual.id, index)}
+                        disabled={
+                          (seriesPorExercicio[exercicioAtual.id] || [])
+                            .length <= 1
+                        }
+                        style={{
+                          ...removeButton,
+                          opacity:
+                            (seriesPorExercicio[exercicioAtual.id] || [])
+                              .length <= 1
+                              ? 0.35
+                              : 1,
+                          cursor:
+                            (seriesPorExercicio[exercicioAtual.id] || [])
+                              .length <= 1
+                              ? "not-allowed"
+                              : "pointer",
+                        }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ),
+                )}
+
+                <div style={acoesTreino}>
+                  <button
+                    type="button"
+                    onClick={voltarExercicio}
+                    disabled={indiceAtual === 0}
+                    style={{
+                      ...secondaryButton,
+                      opacity: indiceAtual === 0 ? 0.5 : 1,
+                      cursor: indiceAtual === 0 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Anterior
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={concluirExercicioAtual}
+                    style={primaryButton}
+                  >
+                    {exerciciosConcluidos[exercicioAtual.id]
+                      ? "Atualizar exercicio"
+                      : "Concluir exercicio"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={avancarExercicio}
+                    disabled={indiceAtual === totalExercicios - 1}
+                    style={{
+                      ...secondaryButton,
+                      opacity: indiceAtual === totalExercicios - 1 ? 0.5 : 1,
+                      cursor:
+                        indiceAtual === totalExercicios - 1
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  >
+                    Proximo
+                  </button>
+                </div>
+              </section>
+
+              <div style={rodapeTreino}>
                 <button
                   type="button"
-                  onClick={voltarExercicio}
-                  disabled={indiceAtual === 0}
+                  onClick={finalizarTreino}
+                  disabled={registrando || !todosExerciciosConcluidos()}
                   style={{
-                    ...secondaryButton,
-                    opacity: indiceAtual === 0 ? 0.5 : 1,
-                    cursor: indiceAtual === 0 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Anterior
-                </button>
-
-                <button
-                  type="button"
-                  onClick={concluirExercicioAtual}
-                  style={primaryButton}
-                >
-                  {exerciciosConcluidos[exercicioAtual.id]
-                    ? "Atualizar exercicio"
-                    : "Concluir exercicio"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={avancarExercicio}
-                  disabled={indiceAtual === totalExercicios - 1}
-                  style={{
-                    ...secondaryButton,
-                    opacity: indiceAtual === totalExercicios - 1 ? 0.5 : 1,
+                    ...primaryButton,
+                    padding: "14px 32px",
+                    fontSize: 16,
+                    opacity:
+                      registrando || !todosExerciciosConcluidos() ? 0.6 : 1,
                     cursor:
-                      indiceAtual === totalExercicios - 1
+                      registrando || !todosExerciciosConcluidos()
                         ? "not-allowed"
                         : "pointer",
                   }}
                 >
-                  Proximo
+                  {registrando ? "Registrando..." : "Finalizar treino"}
                 </button>
+
+                {!todosExerciciosConcluidos() && (
+                  <p style={{ margin: "10px 0 0", color: "#7b8794" }}>
+                    Conclua todos os exercicios para finalizar o treino.
+                  </p>
+                )}
               </div>
-            </section>
-
-            <div style={rodapeTreino}>
-              <button
-                type="button"
-                onClick={finalizarTreino}
-                disabled={registrando || !todosExerciciosConcluidos()}
-                style={{
-                  ...primaryButton,
-                  padding: "14px 32px",
-                  fontSize: 16,
-                  opacity:
-                    registrando || !todosExerciciosConcluidos() ? 0.6 : 1,
-                  cursor:
-                    registrando || !todosExerciciosConcluidos()
-                      ? "not-allowed"
-                      : "pointer",
-                }}
-              >
-                {registrando ? "Registrando..." : "Finalizar treino"}
-              </button>
-
-              {!todosExerciciosConcluidos() && (
-                <p style={{ margin: "10px 0 0", color: "#7b8794" }}>
-                  Conclua todos os exercicios para finalizar o treino.
-                </p>
-              )}
-            </div>
-          </>
-        )}
+            </>
+          )}
       </main>
     </div>
   );
@@ -684,6 +753,39 @@ const acoesTreino = {
 
 const rodapeTreino = {
   marginTop: 20,
+};
+
+const resumoTreinoLista = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
+};
+
+const resumoTreinoCard = {
+  padding: 18,
+  borderRadius: 12,
+  background: "#f7f9fb",
+  border: "1px solid #edf1f5",
+};
+
+const resumoSeriesHeader = {
+  display: "grid",
+  gridTemplateColumns: "100px 1fr 1fr",
+  gap: 12,
+  color: "#7b8794",
+  fontSize: 12,
+  fontWeight: 800,
+  paddingBottom: 8,
+};
+
+const resumoSerieRow = {
+  display: "grid",
+  gridTemplateColumns: "100px 1fr 1fr",
+  gap: 12,
+  alignItems: "center",
+  padding: "10px 0",
+  borderTop: "1px solid #e5e9ef",
+  color: "#102b46",
 };
 
 const alertaSucesso = {
