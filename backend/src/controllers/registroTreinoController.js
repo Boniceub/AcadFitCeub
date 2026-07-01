@@ -111,24 +111,20 @@ const listarTreinosRealizados = async (req, res) => {
     .from("registro_treino")
     .select(
       `
+      *,
+      ficha_treino(nome),
+      registro_serie(
         *,
-        ficha_treino(nome),
-        registro_serie(
+        ficha_exercicio(
           *,
-          ficha_exercicio(
-            *,
-            exercicio(*)
-          )
+          exercicio(*)
         )
-      `,
+      )
+    `,
     )
     .eq("usuario_id", usuario_id)
     .order("data", { ascending: false })
-    .order("criado_em", { ascending: false })
-    .order("numero_serie", {
-      referencedTable: "registro_serie",
-      ascending: true,
-    });
+    .order("criado_em", { ascending: false });
 
   if (error) {
     return res.status(500).json({
