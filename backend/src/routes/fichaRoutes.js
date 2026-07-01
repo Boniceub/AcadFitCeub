@@ -8,6 +8,7 @@ const {
   editarFicha,
   deletarFicha,
   adicionarExercicio,
+  editarExercicioDaFicha,
   removerExercicio,
   treino_do_dia,
 } = require("../controllers/fichaController");
@@ -32,6 +33,13 @@ router.delete("/:id", authMiddleware, deletarFicha);
 
 // POST /fichas/:id/exercicios — adiciona exercício a uma ficha
 router.post("/:id/exercicios", authMiddleware, adicionarExercicio);
+
+// PUT /fichas/:id/exercicios/:exercicio_id — edita exercício de uma ficha
+router.put(
+  "/:id/exercicios/:exercicio_id",
+  authMiddleware,
+  editarExercicioDaFicha,
+);
 
 // DELETE /fichas/:id/exercicios/:exercicio_id — remove exercício de uma ficha
 router.delete(

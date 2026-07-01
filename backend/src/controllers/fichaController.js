@@ -140,6 +140,61 @@ const adicionarExercicio = async (req, res) => {
   });
 };
 
+// PUT /fichas/:id/exercicios/:exercicio_id — edita exercício dentro da ficha
+const editarExercicioDaFicha = async (req, res) => {
+  const { id, exercicio_id } = req.params;
+  const { series, repeticoes, carga_kg } = req.body;
+  const usuario_id = req.usuario.id;
+
+  if (!series || !repeticoes) {
+    return res
+      .status(400)
+      .json({ erro: "Series e repeticoes sao obrigatorias." });
+  }
+
+  if (Number(series) <= 0 || Number(repeticoes) <= 0) {
+    return res
+      .status(400)
+      .json({ erro: "Series e repeticoes devem ser maiores que zero." });
+  }
+
+  if (carga_kg !== null && carga_kg !== undefined && Number(carga_kg) < 0) {
+    return res.status(400).json({ erro: "Carga deve ser um valor positivo." });
+  }
+
+  const { data: ficha, error: fichaError } = await supabase
+    .from("ficha_treino")
+    .select("id")
+    .eq("id", id)
+    .eq("usuario_id", usuario_id)
+    .single();
+
+  if (fichaError || !ficha) {
+    return res.status(404).json({ erro: "Ficha nao encontrada." });
+  }
+
+  const { data, error } = await supabase
+    .from("ficha_exercicio")
+    .update({
+      series: Number(series),
+      repeticoes: Number(repeticoes),
+      carga_kg: carga_kg === "" || carga_kg === null ? null : Number(carga_kg),
+    })
+    .eq("id", exercicio_id)
+    .eq("ficha_id", id)
+    .select("*, exercicio(*)")
+    .single();
+
+  if (error || !data) {
+    return res.status(404).json({ erro: "Exercicio da ficha nao encontrado." });
+  }
+
+  return res.status(200).json({
+    mensagem: "Exercicio da ficha atualizado com sucesso!",
+    ficha_exercicio: data,
+  });
+};
+
 // DELETE /fichas/:id/exercicios/:exercicio_id — remove exercício de uma ficha
 const removerExercicio = async (req, res) => {
   const { id, exercicio_id } = req.params;
@@ -197,6 +252,7 @@ module.exports = {
   editarFicha,
   deletarFicha,
   adicionarExercicio,
+  editarExercicioDaFicha,
   removerExercicio,
   treino_do_dia,
 };
