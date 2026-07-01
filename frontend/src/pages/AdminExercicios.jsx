@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 const TIPOS = ["Máquina", "Halter", "Cabo", "Peso Corporal"];
@@ -189,9 +190,7 @@ export default function AdminExercicios() {
         )}
 
         {carregando ? (
-          <p style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
-            Carregando...
-          </p>
+          <LoadingState mensagem="Carregando exercicios..." />
         ) : (
           <div
             style={{

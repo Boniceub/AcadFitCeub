@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 const DIAS_SEMANA = [
@@ -207,7 +208,7 @@ export default function CriarFicha() {
               style={{ ...inputStyle, marginBottom: 16 }}
             />
             {carregando ? (
-              <p style={{ color: "#888" }}>Carregando exercícios...</p>
+              <LoadingState mensagem="Carregando exercícios..." />
             ) : (
               <div
                 style={{
@@ -364,6 +365,7 @@ export default function CriarFicha() {
                 ...primaryButton,
                 width: "100%",
                 opacity: salvando ? 0.7 : 1,
+                cursor: salvando ? "not-allowed" : "pointer",
               }}
             >
               {salvando ? "Criando..." : "Criar ficha"}

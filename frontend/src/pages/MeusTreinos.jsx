@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 
@@ -135,9 +136,7 @@ export default function MeusTreinos() {
         {erro && <div style={alertaErro}>{erro}</div>}
 
         {carregando ? (
-          <p style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
-            Carregando fichas...
-          </p>
+          <LoadingState mensagem="Carregando fichas..." />
         ) : fichas.length === 0 ? (
           <section style={panelStyle}>
             <h2 style={{ margin: "0 0 8px", color: "#102b46" }}>

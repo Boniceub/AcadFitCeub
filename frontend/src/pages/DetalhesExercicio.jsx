@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 
@@ -58,7 +59,7 @@ export default function DetalhesExercicio() {
           ← Voltar ao Catálogo
         </button>
 
-        {carregando && <p style={{ color: "#888" }}>Carregando...</p>}
+        {carregando && <LoadingState mensagem="Carregando exercicio..." />}
         {erro && <p style={{ color: "red" }}>{erro}</p>}
 
         {exercicio && (

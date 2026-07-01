@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 const META_AGUA_ML = 2000;
@@ -226,8 +227,16 @@ function Dashboard() {
             </p>
           </div>
 
-          <button style={botaoSecundario} onClick={carregarDashboard}>
-            Atualizar
+          <button
+            style={{
+              ...botaoSecundario,
+              opacity: carregando ? 0.7 : 1,
+              cursor: carregando ? "not-allowed" : "pointer",
+            }}
+            onClick={carregarDashboard}
+            disabled={carregando}
+          >
+            {carregando ? "Atualizando..." : "Atualizar"}
           </button>
         </header>
 
@@ -269,7 +278,7 @@ function Dashboard() {
           <div style={painel}>
             <h2 style={painelTitulo}>Treino de hoje</h2>
 
-            {carregando && <p style={textoCinza}>Carregando treino...</p>}
+            {carregando && <LoadingState mensagem="Carregando treino..." />}
 
             {!carregando && !treinoHoje && (
               <>

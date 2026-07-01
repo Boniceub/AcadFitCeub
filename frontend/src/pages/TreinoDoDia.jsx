@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 
@@ -121,11 +122,7 @@ export default function TreinoDoDia() {
           </div>
         )}
 
-        {carregando && (
-          <p style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
-            Carregando treino...
-          </p>
-        )}
+        {carregando && <LoadingState mensagem="Carregando treino..." />}
 
         {ficha && !carregando && (
           <>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 
@@ -174,7 +175,7 @@ export default function Perfil() {
         {sucesso && <div style={alertaSucesso}>{sucesso}</div>}
 
         {carregando ? (
-          <div style={estadoCarregando}>Carregando perfil...</div>
+          <LoadingState mensagem="Carregando perfil..." />
         ) : (
           <form onSubmit={salvarPerfil} style={formularioBox}>
             <section style={painel}>
@@ -522,13 +523,4 @@ const alertaSucesso = {
   borderRadius: 8,
   background: "#f1fbf4",
   color: "#25703b",
-};
-
-const estadoCarregando = {
-  padding: 30,
-  border: "1px solid #dfe5eb",
-  borderRadius: 8,
-  background: "#fff",
-  color: "#778493",
-  textAlign: "center",
 };
