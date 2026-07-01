@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 const META_AGUA_ML = 2000;
@@ -506,7 +507,7 @@ export default function DiarioDieta() {
         {sucesso && <div style={alertaSucesso}>{sucesso}</div>}
 
         {carregando ? (
-          <div style={estadoVazio}>Carregando diário...</div>
+          <LoadingState mensagem="Carregando diário..." />
         ) : (
           <section style={listaRefeicoes}>
             {grupos.map((grupo) => (
@@ -669,6 +670,10 @@ export default function DiarioDieta() {
                 style={{
                   ...botaoPrimario,
                   opacity: !alimentoSelecionado || processando ? 0.6 : 1,
+                  cursor:
+                    !alimentoSelecionado || processando
+                      ? "not-allowed"
+                      : "pointer",
                 }}
               >
                 {processando ? "Adicionando..." : "Adicionar alimento"}
@@ -753,7 +758,11 @@ function AguaWidget({
 
         <button
           type="button"
-          style={botaoPrimario}
+          style={{
+            ...botaoPrimario,
+            opacity: processando ? 0.7 : 1,
+            cursor: processando ? "not-allowed" : "pointer",
+          }}
           onClick={() => onRegistrar(quantidade)}
         >
           Registrar água
@@ -1363,15 +1372,6 @@ const alertaSucesso = {
   borderRadius: 8,
   background: "#f1fbf4",
   color: "#25703b",
-};
-
-const estadoVazio = {
-  padding: 30,
-  border: "1px solid #dfe5eb",
-  borderRadius: 8,
-  background: "#fff",
-  color: "#778493",
-  textAlign: "center",
 };
 
 const fundoModal = {

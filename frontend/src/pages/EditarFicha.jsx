@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 const DIAS_SEMANA = [
@@ -138,7 +139,7 @@ export default function EditarFicha() {
       <div style={{ minHeight: "100vh", background: "#f0f4f8" }}>
         <Sidebar />
         <main style={{ marginLeft: 240, padding: "32px 36px" }}>
-          <p style={{ color: "#888" }}>Carregando...</p>
+          <LoadingState mensagem="Carregando ficha..." />
         </main>
       </div>
     );
@@ -181,7 +182,11 @@ export default function EditarFicha() {
             <button
               onClick={salvarFicha}
               disabled={salvando}
-              style={{ ...primaryButton, opacity: salvando ? 0.7 : 1 }}
+              style={{
+                ...primaryButton,
+                opacity: salvando ? 0.7 : 1,
+                cursor: salvando ? "not-allowed" : "pointer",
+              }}
             >
               {salvando ? "Salvando..." : "Salvar ficha"}
             </button>

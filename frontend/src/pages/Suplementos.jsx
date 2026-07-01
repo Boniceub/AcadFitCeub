@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import LoadingState from "../components/LoadingState";
 
 const API_URL = "http://localhost:3000";
 
@@ -315,8 +316,12 @@ function Suplementos() {
 
             <button
               type="submit"
-              style={estilos.botaoPrincipal}
               disabled={salvando}
+              style={{
+                ...estilos.botaoPrincipal,
+                opacity: salvando ? 0.7 : 1,
+                cursor: salvando ? "not-allowed" : "pointer",
+              }}
             >
               {salvando
                 ? "Salvando..."
@@ -337,7 +342,7 @@ function Suplementos() {
             </div>
 
             {carregando ? (
-              <div style={estilos.estadoVazio}>Carregando suplementos...</div>
+              <LoadingState mensagem="Carregando suplementos..." />
             ) : suplementosOrdenados.length === 0 ? (
               <div style={estilos.estadoVazio}>
                 Nenhum suplemento registrado para esta data.
