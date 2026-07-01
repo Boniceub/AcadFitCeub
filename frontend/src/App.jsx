@@ -11,6 +11,7 @@ import EditarFicha from "./pages/EditarFicha";
 import Catalogo from "./pages/Catalogo";
 import DiarioDieta from "./pages/DiarioDieta";
 import Suplementos from "./pages/Suplementos";
+import Perfil from "./pages/Perfil";
 
 function App() {
   return (
@@ -23,6 +24,15 @@ function App() {
           element={
             <RotaProtegida>
               <Dashboard />
+            </RotaProtegida>
+          }
+        />
+
+        <Route
+          path="/perfil"
+          element={
+            <RotaProtegida>
+              <Perfil />
             </RotaProtegida>
           }
         />
