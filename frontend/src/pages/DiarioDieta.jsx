@@ -498,6 +498,7 @@ export default function DiarioDieta() {
           metaMl={META_AGUA_ML}
           registros={aguaRegistros}
           quantidade={quantidadeAgua}
+          processando={processando}
           onQuantidadeChange={setQuantidadeAgua}
           onRegistrar={registrarAgua}
           onRemover={removerAgua}
@@ -701,6 +702,7 @@ function AguaWidget({
   metaMl,
   registros,
   quantidade,
+  processando = false,
   onQuantidadeChange,
   onRegistrar,
   onRemover,
@@ -758,6 +760,7 @@ function AguaWidget({
 
         <button
           type="button"
+          disabled={processando}
           style={{
             ...botaoPrimario,
             opacity: processando ? 0.7 : 1,
