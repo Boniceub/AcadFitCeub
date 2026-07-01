@@ -361,7 +361,7 @@ function Dashboard() {
           </div>
 
           <div style={painel}>
-            <h2 style={painelTitulo}>Treinos concluídos na semana</h2>
+            <h2 style={painelTitulo}>Treinos concluídos na última semana</h2>
 
             <GraficoBarras
               dados={dadosTreinoSemana}
@@ -375,7 +375,7 @@ function Dashboard() {
           </div>
 
           <div style={painel}>
-            <h2 style={painelTitulo}>Consumo de água na semana</h2>
+            <h2 style={painelTitulo}>Consumo de água na última semana</h2>
 
             <GraficoBarras
               dados={dadosAguaSemana}
